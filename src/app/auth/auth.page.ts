@@ -50,6 +50,7 @@ export class AuthPage implements OnInit {
 
     console.log(email, password);
     
+    this.login();
   } 
 
 
