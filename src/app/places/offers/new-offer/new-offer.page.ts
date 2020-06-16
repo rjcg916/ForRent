@@ -1,5 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
+import { PlacesService } from '../../places.service';
+import { Place } from '../../place.model';
+import { AuthService } from 'src/app/auth/auth.service';
 
 @Component({
   selector: 'app-new-offer',
@@ -8,7 +11,8 @@ import { FormGroup, FormControl, Validators } from '@angular/forms';
 })
 export class NewOfferPage implements OnInit {
   form: FormGroup;
-  constructor() { }
+  constructor(private placesService : PlacesService,
+              private authService : AuthService) { }
 
   ngOnInit() {
     this.form = new FormGroup({
@@ -23,6 +27,14 @@ export class NewOfferPage implements OnInit {
   onCreateOffer() {
     if (!this.form.valid)
     return;
-    console.log(this.form);
+    
+    
+     let newPlace = new Place(
+      Math.random.toString(), this.form.value.title, this.form.value.description, "https://www.roadsideamerica.com/attract/images/az/AZHOLwigwam_3487.jpg", 
+                              this.form.value.price, new Date( this.form.value.dateFrom), new Date(this.form.value.dateTo), this.authService.userId);
+
+    this.placesService.addPlace(newPlace);
+
+
   }
 }
