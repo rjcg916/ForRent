@@ -48,7 +48,7 @@ export class AuthPage implements OnInit {
     const email = form.value.email;
     const password = form.value.password;
 
-    console.log(email, password);
+   // console.log(email, password);
     
     this.login();
   } 
