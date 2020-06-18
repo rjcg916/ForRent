@@ -87,7 +87,7 @@ export class PlacesService {
     dateTo: Date
   ) {
     const newPlace = new Place(
-      "p234",
+      Math.random().toString(),
       title,
       description,
       "https://www.roadsideamerica.com/attract/images/az/AZHOLwigwam_3487.jpg",
