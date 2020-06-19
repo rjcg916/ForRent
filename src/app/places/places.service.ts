@@ -53,6 +53,9 @@ export class PlacesService {
   private placesServiceUrl =
     "https://forrent-5cf25.firebaseio.com/offered-places.json";
 
+  private placesServicePutUrl =
+    "https://forrent-5cf25.firebaseio.com/offered-places/";
+
   private _places = new BehaviorSubject<Place[]>([]);
 
   get places() {
@@ -82,7 +85,7 @@ export class PlacesService {
               );
             }
           }
-         return places;
+          return places;
         }),
         tap((places) => {
           this._places.next(places);
@@ -105,12 +108,12 @@ export class PlacesService {
   }
 
   updatePlace(placeId: string, title: string, description: string) {
+    let updatedPlaces: Place[];
     return this.places.pipe(
       take(1),
-      delay(1000),
-      tap((places) => {
+      switchMap((places) => {
         const currentPlaceIndex = places.findIndex((p) => p.id === placeId);
-        const updatedPlaces = [...places];
+        updatedPlaces = [...places];
         const currentPlace = updatedPlaces[currentPlaceIndex];
         updatedPlaces[currentPlaceIndex] = new Place(
           currentPlace.id,
@@ -122,9 +125,36 @@ export class PlacesService {
           currentPlace.availableTo,
           currentPlace.userId
         );
+        return this.httpClient.put(
+          `https://forrent-5cf25.firebaseio.com/offered-places/${placeId}/.json`,
+          { ...updatedPlaces[currentPlaceIndex], id: null }
+        );
+      }),
+      tap(() => {
         this._places.next(updatedPlaces);
       })
     );
+
+    // return this.places.pipe(
+    //   take(1),
+    //   delay(1000),
+    //   tap((places) => {
+    //     const currentPlaceIndex = places.findIndex((p) => p.id === placeId);
+    //     const updatedPlaces = [...places];
+    //     const currentPlace = updatedPlaces[currentPlaceIndex];
+    //     updatedPlaces[currentPlaceIndex] = new Place(
+    //       currentPlace.id,
+    //       title,
+    //       description,
+    //       currentPlace.imageUrl,
+    //       currentPlace.price,
+    //       currentPlace.availableFrom,
+    //       currentPlace.availableTo,
+    //       currentPlace.userId
+    //     );
+    //     this._places.next(updatedPlaces);
+    //   })
+    // );
   }
 
   addPlace(
