@@ -4,15 +4,16 @@ import {
   ModalController,
   ActionSheetController,
   LoadingController,
+  AlertController,
 } from "@ionic/angular";
 import { AppConstants } from "../../../constants";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { Place } from "../../place.model";
 import { PlacesService } from "../../places.service";
 import { CreateBookingComponent } from "../../../bookings/create-booking/create-booking.component";
 import { Subscription } from "rxjs";
-import { BookingService } from "src/app/bookings/booking.service";
-import { AuthService } from 'src/app/auth/auth.service';
+import { BookingService } from "../../../bookings/booking.service";
+import { AuthService } from "../../../auth/auth.service";
 
 @Component({
   selector: "app-place-detail",
@@ -23,6 +24,7 @@ export class PlaceDetailPage implements OnInit, OnDestroy {
   place: Place;
   private placeSub: Subscription;
   isBookable = false;
+  isLoading = false;
   constructor(
     private navController: NavController,
     private activatedRoute: ActivatedRoute,
@@ -30,8 +32,10 @@ export class PlaceDetailPage implements OnInit, OnDestroy {
     private modalController: ModalController,
     private actionSheetController: ActionSheetController,
     private bookingService: BookingService,
-    private loadingController : LoadingController,
-    private authService : AuthService
+    private loadingController: LoadingController,
+    private authService: AuthService,
+    private alertController: AlertController,
+    private router: Router
   ) {}
 
   ngOnDestroy() {
@@ -45,12 +49,29 @@ export class PlaceDetailPage implements OnInit, OnDestroy {
         this.navController.navigateBack(AppConstants.pathToDiscover);
         return;
       }
+      this.isLoading = true;
       this.placeSub = this.placesService
         .getPlace(paramMap.get("placeId"))
-        .subscribe((place) => {
-          this.place = place;
-          this.isBookable = place.userId !== this.authService.userId
-        });
+        .subscribe(
+          (place) => {
+            this.place = place;
+            this.isBookable = place.userId !== this.authService.userId;
+            this.isLoading = false;
+          },
+          (error) => {
+            this.alertController
+              .create({
+                header: "An Error Occured",
+                message: "Invalid/Unknown Place",
+                buttons: [{ text: "Ok", handler: () => {this.router.navigate(['/places/tabs/discover'])} }]
+              })
+              .then(
+                element => {
+                  element.present();
+                }
+              );
+          }
+        );
     });
   }
 
@@ -77,7 +98,6 @@ export class PlaceDetailPage implements OnInit, OnDestroy {
       .then((actionSheetElement) => {
         actionSheetElement.present();
       });
-
   }
 
   openModal(mode: "select" | "random") {
@@ -92,30 +112,28 @@ export class PlaceDetailPage implements OnInit, OnDestroy {
       })
       .then((resultData) => {
         console.log(resultData.data, resultData.role);
-  
+
         if (resultData.role === "confirm") {
-
-          this.loadingController.create({message: 'Booking place...'}).then( element => {
-            element.present();
-            const bookingData = resultData.data.bookingData; 
-            this.bookingService.addBooking(
-              this.place.id,
-              this.place.title,
-              this.place.imageUrl,
-              bookingData.firstName,
-              bookingData.lastName,
-              bookingData.numberOfGuests,
-              bookingData.startDate,
-              bookingData.endDate
-            ).subscribe( () => {
-              element.dismiss();
-
+          this.loadingController
+            .create({ message: "Booking place..." })
+            .then((element) => {
+              element.present();
+              const bookingData = resultData.data.bookingData;
+              this.bookingService
+                .addBooking(
+                  this.place.id,
+                  this.place.title,
+                  this.place.imageUrl,
+                  bookingData.firstName,
+                  bookingData.lastName,
+                  bookingData.numberOfGuests,
+                  bookingData.startDate,
+                  bookingData.endDate
+                )
+                .subscribe(() => {
+                  element.dismiss();
+                });
             });
-
-          }
- 
-          );
- 
         }
       });
   }
