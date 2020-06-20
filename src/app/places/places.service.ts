@@ -2,7 +2,7 @@ import { Injectable } from "@angular/core";
 import { Place } from "./place.model";
 import { AuthService } from "../auth/auth.service";
 import { HttpClient } from "@angular/common/http";
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, of } from "rxjs";
 import { take, map, tap, delay, switchMap } from "rxjs/operators";
 
 interface IPlaceData {
@@ -19,42 +19,10 @@ interface IPlaceData {
   providedIn: "root",
 })
 export class PlacesService {
-  // new Place(
-  //   "p1",
-  //   "London Flat",
-  //   "Smashing",
-  //   "https://upload.wikimedia.org/wikipedia/commons/6/6d/City_of_London_skyline_from_London_City_Hall_-_Sept_2015_-_Crop_Aligned.jpg",
-  //   129.99,
-  //   new Date("2020-06-01"),
-  //   new Date("2021-12-31"),
-  //   "1"
-  // ),
-  // new Place(
-  //   "p2",
-  //   "Mongolian Yurt",
-  //   "Baby its cold outside",
-  //   "https://i1.wp.com/upload.wikimedia.org/wikipedia/commons/b/be/Mongolian_yurt2013.jpg",
-  //   78.97,
-  //   new Date("2020-06-01"),
-  //   new Date("2021-12-31"),
-  //   "1"
-  // ),
-  // new Place(
-  //   "p3",
-  //   "Arizona TeePee",
-  //   "a little hot",
-  //   "https://www.roadsideamerica.com/attract/images/az/AZHOLwigwam_3487.jpg",
-  //   49.99,
-  //   new Date("2020-06-01"),
-  //   new Date("2021-12-31"),
-  //   "2"
-  // ),
+
 
   private placesServiceUrl =
     "https://forrent-5cf25.firebaseio.com/offered-places.json";
-
-  private placesServicePutUrl =
-    "https://forrent-5cf25.firebaseio.com/offered-places/";
 
   private _places = new BehaviorSubject<Place[]>([]);
 
@@ -98,21 +66,42 @@ export class PlacesService {
     private httpClient: HttpClient
   ) {}
 
+
+
   getPlace(id: string) {
-    return this.places.pipe(
-      take(1),
-      map((places) => {
-        return { ...places.find((p) => p.id === id) };
-      })
-    );
+    return this.httpClient
+      .get<IPlaceData>(
+        `https://forrent-5cf25.firebaseio.com/offered-places/${id}/.json`
+      )
+      .pipe(
+        map((place) => {
+          return new Place(
+            id,
+            place.title,
+            place.description,
+            place.imageUrl,
+            place.price,
+            new Date(place.availableFrom),
+            new Date(place.availableTo),
+            place.userId
+          );
+        })
+      );
   }
 
-  updatePlace(placeId: string, title: string, description: string) {
+  updatePlace(id: string, title: string, description: string) {
     let updatedPlaces: Place[];
     return this.places.pipe(
       take(1),
       switchMap((places) => {
-        const currentPlaceIndex = places.findIndex((p) => p.id === placeId);
+        if (!places || places.length <= 0) {
+          return this.fetchPlaces();
+        } else {
+          return of(places);
+        }
+      }),
+      switchMap((places) => {
+        const currentPlaceIndex = places.findIndex((p) => p.id === id);
         updatedPlaces = [...places];
         const currentPlace = updatedPlaces[currentPlaceIndex];
         updatedPlaces[currentPlaceIndex] = new Place(
@@ -126,7 +115,7 @@ export class PlacesService {
           currentPlace.userId
         );
         return this.httpClient.put(
-          `https://forrent-5cf25.firebaseio.com/offered-places/${placeId}/.json`,
+          `https://forrent-5cf25.firebaseio.com/offered-places/${id}/.json`,
           { ...updatedPlaces[currentPlaceIndex], id: null }
         );
       }),
@@ -134,27 +123,6 @@ export class PlacesService {
         this._places.next(updatedPlaces);
       })
     );
-
-    // return this.places.pipe(
-    //   take(1),
-    //   delay(1000),
-    //   tap((places) => {
-    //     const currentPlaceIndex = places.findIndex((p) => p.id === placeId);
-    //     const updatedPlaces = [...places];
-    //     const currentPlace = updatedPlaces[currentPlaceIndex];
-    //     updatedPlaces[currentPlaceIndex] = new Place(
-    //       currentPlace.id,
-    //       title,
-    //       description,
-    //       currentPlace.imageUrl,
-    //       currentPlace.price,
-    //       currentPlace.availableFrom,
-    //       currentPlace.availableTo,
-    //       currentPlace.userId
-    //     );
-    //     this._places.next(updatedPlaces);
-    //   })
-    // );
   }
 
   addPlace(
@@ -189,12 +157,5 @@ export class PlacesService {
           this._places.next(places.concat(newPlace));
         })
       );
-    // return this.places.pipe(
-    //   take(1),
-    //   delay(1000),
-    //   tap((places) => {
-    //     this._places.next(places.concat(newPlace));
-    //   })
-    // );
   }
 }
