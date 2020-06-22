@@ -4,7 +4,7 @@ import { AuthService } from "../auth/auth.service";
 import { HttpClient } from "@angular/common/http";
 import { BehaviorSubject, of } from "rxjs";
 import { take, map, tap, delay, switchMap } from "rxjs/operators";
-import { environment } from 'src/environments/environment';
+import { environment } from "src/environments/environment";
 
 interface IPlaceData {
   availableFrom: string;
@@ -20,17 +20,22 @@ interface IPlaceData {
   providedIn: "root",
 })
 export class PlacesService {
-
-
   private _places = new BehaviorSubject<Place[]>([]);
 
+  constructor(
+    private authService: AuthService,
+    private httpClient: HttpClient
+  ) {}
+  
   get places() {
     return this._places.asObservable();
   }
 
   fetchPlaces() {
     return this.httpClient
-      .get<{ [key: string]: IPlaceData }>(`${environment.serviceUrlRoot}/offered-places.json`)
+      .get<{ [key: string]: IPlaceData }>(
+        `${environment.serviceUrlRoot}/offered-places.json`
+      )
       .pipe(
         map((result) => {
           const places = [];
@@ -58,11 +63,6 @@ export class PlacesService {
         })
       );
   }
-
-  constructor(
-    private authService: AuthService,
-    private httpClient: HttpClient
-  ) {}
 
 
 
@@ -131,29 +131,38 @@ export class PlacesService {
     dateTo: Date
   ) {
     let generatedId: string;
-    const newPlace = new Place(
-      Math.random().toString(),
-      title,
-      description,
-      "https://www.roadsideamerica.com/attract/images/az/AZHOLwigwam_3487.jpg",
-      price,
-      dateFrom,
-      dateTo,
-      this.authService.userId
-    );
+    let newPlace: Place;
+    return this.authService.userId.pipe(
+      take(1),
+      switchMap((userId) => {
+        if (!userId) {
+          throw new Error("No User Found!");
+        }
+        newPlace = new Place(
+          Math.random().toString(),
+          title,
+          description,
+          "https://www.roadsideamerica.com/attract/images/az/AZHOLwigwam_3487.jpg",
+          price,
+          dateFrom,
+          dateTo,
+          userId
+        );
+        return this.httpClient.post<{ name: string }>(
+          `${environment.serviceUrlRoot}/offered-places.json`,
+          { ...newPlace, id: null }
+        );
+      }),
 
-    return this.httpClient
-      .post<{ name: string }>(`${environment.serviceUrlRoot}/offered-places.json`, { ...newPlace, id: null })
-      .pipe(
-        switchMap((result) => {
-          generatedId = result.name;
-          return this.places;
-        }),
-        take(1),
-        tap((places) => {
-          newPlace.id = generatedId;
-          this._places.next(places.concat(newPlace));
-        })
-      );
+      switchMap((result) => {
+        generatedId = result.name;
+        return this.places;
+      }),
+      take(1),
+      tap((places) => {
+        newPlace.id = generatedId;
+        this._places.next(places.concat(newPlace));
+      })
+    );
   }
 }
