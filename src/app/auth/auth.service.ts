@@ -70,12 +70,16 @@ export class AuthService {
     this._user.next(null);
   }
 
-  setUserData(user: IAuthResponseData) {
+  private setUserData(user: IAuthResponseData) {
     const expirationTime = new Date(
       new Date().getTime() + +user.expiresIn * 1000
     );
     this._user.next(
       new User(user.localId, user.email, user.idToken, expirationTime)
     );
+  }
+
+  private storeAuthData( userId : string, token: string, tokenExpirationDate: string) {
+
   }
 }
