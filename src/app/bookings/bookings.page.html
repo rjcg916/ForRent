@@ -9,9 +9,11 @@
 
 <ion-content>
   <ion-row>
+    <ion-col *ngIf="isLoading" size-md="6" offset-md="3" class="ion-text-center">
+      <ion-spinner color="primary"></ion-spinner>
+    </ion-col>
     <ion-col size-md="6" offset-md="3" class="ion-text-center">
-      
-      <ion-list *ngIf="bookings.length > 0">
+      <ion-list *ngIf="!isLoading && (bookings && bookings.length >= 1)">
         <ion-item-sliding *ngFor="let b  of bookings" #bookingSlider >
           <ion-item>
             <ion-text>{{b.placeTitle}} for {{ b.numberOfGuests}}</ion-text>
@@ -23,7 +25,7 @@
           </ion-item-options>
         </ion-item-sliding>
       </ion-list>
-      <ion-text *ngIf="bookings.length < 1" >
+      <ion-text *ngIf="!isLoading && (bookings && bookings.length <= 0)" >
         You have no bookings.
       </ion-text>
     </ion-col>

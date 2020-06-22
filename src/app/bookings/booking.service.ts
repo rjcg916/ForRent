@@ -2,8 +2,21 @@ import { Injectable } from "@angular/core";
 import { Booking } from "./booking.model";
 import { BehaviorSubject } from "rxjs";
 import { AuthService } from "../auth/auth.service";
-import { take, map, tap, delay, switchMap } from "rxjs/operators";
+import { take, map, tap, switchMap } from "rxjs/operators";
 import { HttpClient } from "@angular/common/http";
+
+interface IBookingData {
+  bookedFrom: string;
+  bookedTo: string;
+  firstName: string;
+  lastName: string;
+  numberOfGuests: number;
+  placeId: string;
+  placeImage: string;
+  placeTitle: string;
+  userId: string;
+}
+
 @Injectable({
   providedIn: "root",
 })
@@ -30,6 +43,39 @@ export class BookingService {
     );
   }
 
+  fetchBookings() {
+    return this.httpClient
+      .get<{ [key: string]: IBookingData }>(`https://forrent-5cf25.firebaseio.com/available-bookings.json?orderBy="userId"&equalTo="${this.authService.userId}"`)
+      .pipe(
+        map((bookingData) => {
+          const bookings = [];
+          for (const key in bookingData) {
+            if (bookingData.hasOwnProperty(key)) {
+              
+              bookings.push(
+                new Booking(
+                  key,
+                  bookingData[key].placeId,
+                  bookingData[key].userId,
+                  bookingData[key].placeTitle,
+                  bookingData[key].placeImage,
+                  bookingData[key].lastName,
+                  bookingData[key].firstName,
+                  bookingData[key].numberOfGuests,
+                  new Date(bookingData[key].bookedFrom),
+                  new Date(bookingData[key].bookedTo)
+                )
+              );
+            }
+          }
+          return bookings;
+        }),
+        tap( bookings => {
+          this._bookings.next(bookings);
+        })        
+      );
+  }
+
   addBooking(
     placeId: string,
     placeTitle: string,
@@ -53,9 +99,8 @@ export class BookingService {
       dateTo
     );
 
- 
     let generatedId: string;
-    
+
     return this.httpClient
       .post<{ name: string }>(this.bookingsServiceUrl, {
         ...newBooking,
@@ -75,14 +120,15 @@ export class BookingService {
   }
 
   cancelBooking(id: string) {
-    return this.bookings.pipe(
-      take(1),
-      delay(1000),
-      tap((bookings) => {
-        const currentBookingIndex = bookings.findIndex((b) => b.id === id);
-        bookings.splice(currentBookingIndex, 1);
-        this._bookings.next(bookings);
-      })
+    return this.httpClient.delete(`https://forrent-5cf25.firebaseio.com/available-bookings/${id}.json`)
+    .pipe(switchMap( () => {
+      return this.bookings
+    }),
+    take(1),
+    tap(bookings => {
+        this._bookings.next(bookings.filter(b => b.id !== id));
+    })
+   
     );
   }
 }
