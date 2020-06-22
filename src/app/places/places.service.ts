@@ -4,6 +4,7 @@ import { AuthService } from "../auth/auth.service";
 import { HttpClient } from "@angular/common/http";
 import { BehaviorSubject, of } from "rxjs";
 import { take, map, tap, delay, switchMap } from "rxjs/operators";
+import { environment } from 'src/environments/environment';
 
 interface IPlaceData {
   availableFrom: string;
@@ -21,9 +22,6 @@ interface IPlaceData {
 export class PlacesService {
 
 
-  private placesServiceUrl =
-    "https://forrent-5cf25.firebaseio.com/offered-places.json";
-
   private _places = new BehaviorSubject<Place[]>([]);
 
   get places() {
@@ -32,7 +30,7 @@ export class PlacesService {
 
   fetchPlaces() {
     return this.httpClient
-      .get<{ [key: string]: IPlaceData }>(this.placesServiceUrl)
+      .get<{ [key: string]: IPlaceData }>(`${environment.serviceUrlRoot}/offered-places.json`)
       .pipe(
         map((result) => {
           const places = [];
@@ -71,7 +69,7 @@ export class PlacesService {
   getPlace(id: string) {
     return this.httpClient
       .get<IPlaceData>(
-        `https://forrent-5cf25.firebaseio.com/offered-places/${id}/.json`
+        `${environment.serviceUrlRoot}/offered-places/${id}/.json`
       )
       .pipe(
         map((place) => {
@@ -115,7 +113,7 @@ export class PlacesService {
           currentPlace.userId
         );
         return this.httpClient.put(
-          `https://forrent-5cf25.firebaseio.com/offered-places/${id}/.json`,
+          `${environment.serviceUrlRoot}/offered-places/${id}/.json`,
           { ...updatedPlaces[currentPlaceIndex], id: null }
         );
       }),
@@ -145,7 +143,7 @@ export class PlacesService {
     );
 
     return this.httpClient
-      .post<{ name: string }>(this.placesServiceUrl, { ...newPlace, id: null })
+      .post<{ name: string }>(`${environment.serviceUrlRoot}/offered-places.json`, { ...newPlace, id: null })
       .pipe(
         switchMap((result) => {
           generatedId = result.name;

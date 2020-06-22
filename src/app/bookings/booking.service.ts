@@ -4,6 +4,7 @@ import { BehaviorSubject } from "rxjs";
 import { AuthService } from "../auth/auth.service";
 import { take, map, tap, switchMap } from "rxjs/operators";
 import { HttpClient } from "@angular/common/http";
+import { environment } from 'src/environments/environment';
 
 interface IBookingData {
   bookedFrom: string;
@@ -21,8 +22,7 @@ interface IBookingData {
   providedIn: "root",
 })
 export class BookingService {
-  private bookingsServiceUrl =
-    "https://forrent-5cf25.firebaseio.com/available-bookings.json";
+
   private _bookings = new BehaviorSubject<Booking[]>([]);
 
   constructor(
@@ -45,8 +45,8 @@ export class BookingService {
 
   fetchBookings() {
     return this.httpClient
-      .get<{ [key: string]: IBookingData }>(`https://forrent-5cf25.firebaseio.com/available-bookings.json?orderBy="userId"&equalTo="${this.authService.userId}"`)
-      .pipe(
+      .get<{ [key: string]: IBookingData }>(`${environment.serviceUrlRoot}/available-bookings.json?orderBy="userId"&equalTo="${this.authService.userId}"`)
+  .pipe(
         map((bookingData) => {
           const bookings = [];
           for (const key in bookingData) {
@@ -102,7 +102,7 @@ export class BookingService {
     let generatedId: string;
 
     return this.httpClient
-      .post<{ name: string }>(this.bookingsServiceUrl, {
+      .post<{ name: string }>(`${environment.serviceUrlRoot}/available-bookings.json`, {
         ...newBooking,
         id: null,
       })
@@ -120,7 +120,7 @@ export class BookingService {
   }
 
   cancelBooking(id: string) {
-    return this.httpClient.delete(`https://forrent-5cf25.firebaseio.com/available-bookings/${id}.json`)
+    return this.httpClient.delete(`${environment.serviceUrlRoot}/available-bookings/${id}.json`)
     .pipe(switchMap( () => {
       return this.bookings
     }),

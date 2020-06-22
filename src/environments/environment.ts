@@ -3,7 +3,9 @@
 // The list of file replacements can be found in `angular.json`.
 
 export const environment = {
-  production: false
+  production: false,
+  serviceUrlRoot : "https://forrent-5cf25.firebaseio.com/",
+  authAPIKey: "AIzaSyBJtRNwAmKoPBDiVNamAgCnEB0wJpK3Eq0"
 };
 
 /*
